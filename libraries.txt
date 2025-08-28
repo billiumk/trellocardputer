@@ -1,0 +1,31 @@
+# Required Arduino Libraries for M5Cardputer Trello Client
+
+# Install these libraries through Arduino IDE Library Manager
+# or via PlatformIO if using that development environment
+
+# M5Stack Libraries (Core)
+M5Cardputer@^1.0.2
+M5GFX@^0.1.11
+M5Unified@^0.1.11
+
+# JSON Processing
+ArduinoJson@^6.21.0
+
+# Network Libraries (Built-in with ESP32 Arduino Core)
+# WiFi - Included with ESP32 core
+# WiFiClientSecure - Included with ESP32 core  
+# HTTPClient - Included with ESP32 core
+
+# Storage Libraries (Built-in with ESP32 Arduino Core)
+# SD - Included with ESP32 core
+# FS - Included with ESP32 core
+
+# ESP32 Arduino Core Requirements
+# Minimum version: 2.0.11
+# Install via Board Manager: https://espressif.github.io/arduino-esp32/package_esp32_index.json
+
+# Additional Notes:
+# - Ensure all libraries are compatible with ESP32-S3
+# - M5Cardputer library includes dependencies for M5GFX and M5Unified
+# - ArduinoJson v6.x is required (not v7.x) for compatibility
+# - All other required libraries are included with the ESP32 Arduino core
