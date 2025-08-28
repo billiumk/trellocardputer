@@ -200,18 +200,16 @@ void handleKeyboard() {
 }
 
 void handleListViewInput() {
-  auto keyState = M5Cardputer.Keyboard.keysState();
-  
-  // Navigation
-  if (keyState.down) {
+  // Navigation using specific key checks
+  if (M5Cardputer.Keyboard.isKeyPressed(';')) { // Down arrow equivalent
     navigation.selectNext(appState.cardList.size());
-  } else if (keyState.up) {
+  } else if (M5Cardputer.Keyboard.isKeyPressed('/')) { // Up arrow equivalent  
     navigation.selectPrevious();
-  } else if (keyState.right) {
+  } else if (M5Cardputer.Keyboard.isKeyPressed('.')) { // Right arrow equivalent
     navigation.nextPage();
-  } else if (keyState.left) {
+  } else if (M5Cardputer.Keyboard.isKeyPressed(',')) { // Left arrow equivalent
     navigation.previousPage();
-  } else if (keyState.enter) {
+  } else if (M5Cardputer.Keyboard.isKeyPressed(KEY_ENTER)) {
     // Open selected card
     if (!appState.cardList.empty() && 
         appState.selectedCardIndex < (int)appState.cardList.size()) {
@@ -220,23 +218,23 @@ void handleListViewInput() {
   }
   
   // Shortcuts
-  if (isKeyPressed('c') || isKeyPressed('C')) {
+  if (M5Cardputer.Keyboard.isKeyPressed('c') || M5Cardputer.Keyboard.isKeyPressed('C')) {
     // Quick comment on selected card
     if (!appState.cardList.empty() && 
         appState.selectedCardIndex < (int)appState.cardList.size()) {
       navigation.pushState(ADD_COMMENT, 0, 0, 
                           appState.cardList[appState.selectedCardIndex].id);
     }
-  } else if (isKeyPressed('n') || isKeyPressed('N')) {
+  } else if (M5Cardputer.Keyboard.isKeyPressed('n') || M5Cardputer.Keyboard.isKeyPressed('N')) {
     // Create new card
     nameBuffer = "";
     descBuffer = "";
     editingName = true;
     navigation.pushState(CREATE_CARD);
-  } else if (isKeyPressed('r') || isKeyPressed('R')) {
+  } else if (M5Cardputer.Keyboard.isKeyPressed('r') || M5Cardputer.Keyboard.isKeyPressed('R')) {
     // Refresh list
     refreshCardList();
-  } else if (isKeyPressed('d') || isKeyPressed('D')) {
+  } else if (M5Cardputer.Keyboard.isKeyPressed('d') || M5Cardputer.Keyboard.isKeyPressed('D')) {
     // Quick mark done (first checklist item)
     if (!appState.cardList.empty() && 
         appState.selectedCardIndex < (int)appState.cardList.size()) {
@@ -246,69 +244,64 @@ void handleListViewInput() {
 }
 
 void handleCardDetailInput() {
-  auto keyState = M5Cardputer.Keyboard.keysState();
-  
   // Scrolling
-  if (keyState.down) {
+  if (M5Cardputer.Keyboard.isKeyPressed(';')) { // Down arrow equivalent
     scrollPosition += UI::DETAIL_SCROLL_STEP;
-  } else if (keyState.up) {
+  } else if (M5Cardputer.Keyboard.isKeyPressed('/')) { // Up arrow equivalent
     scrollPosition = max(0, scrollPosition - UI::DETAIL_SCROLL_STEP);
-  } else if (keyState.enter) {
+  } else if (M5Cardputer.Keyboard.isKeyPressed(KEY_ENTER)) {
     // Go back to list
     navigation.popState();
   }
   
   // Shortcuts
-  if (isKeyPressed('c') || isKeyPressed('C')) {
+  if (M5Cardputer.Keyboard.isKeyPressed('c') || M5Cardputer.Keyboard.isKeyPressed('C')) {
     // Add comment
     navigation.pushState(ADD_COMMENT, 0, 0, appState.currentCard.summary.id);
-  } else if (isKeyPressed('d') || isKeyPressed('D')) {
+  } else if (M5Cardputer.Keyboard.isKeyPressed('d') || M5Cardputer.Keyboard.isKeyPressed('D')) {
     // Mark first checklist item done
     markFirstChecklistDone();
-  } else if (isKeyPressed('r') || isKeyPressed('R')) {
+  } else if (M5Cardputer.Keyboard.isKeyPressed('r') || M5Cardputer.Keyboard.isKeyPressed('R')) {
     // Refresh card details
     refreshCurrentCard();
   }
 }
 
 void handleAddCommentInput() {
-  auto keyState = M5Cardputer.Keyboard.keysState();
-  
-  if (keyState.enter) {
+  if (M5Cardputer.Keyboard.isKeyPressed(KEY_ENTER)) {
     // Submit comment
     addCommentToCard();
-  } else if (keyState.del) {
+  } else if (M5Cardputer.Keyboard.isKeyPressed(KEY_BACKSPACE)) {
     // Delete character
     navigation.deleteFromInput();
-  } else if (keyState.esc) {
+  } else if (M5Cardputer.Keyboard.isKeyPressed(KEY_ESC)) {
     // Cancel
     navigation.clearInput();
     navigation.popState();
-  } else if (keyState.word.length() > 0) {
-    // Add typed characters
-    for (char c : keyState.word) {
-      if (c >= 32 && c <= 126) { // Printable characters
-        navigation.appendToInput(c);
+  } else {
+    // Handle text input - check for any printable character
+    for (uint8_t i = 32; i <= 126; i++) {
+      if (M5Cardputer.Keyboard.isKeyPressed(i)) {
+        navigation.appendToInput((char)i);
+        break; // Only handle one character per update
       }
     }
   }
 }
 
 void handleCreateCardInput() {
-  auto keyState = M5Cardputer.Keyboard.keysState();
-  
-  if (keyState.enter) {
+  if (M5Cardputer.Keyboard.isKeyPressed(KEY_ENTER)) {
     // Create card
     createNewCard();
-  } else if (keyState.tab) {
+  } else if (M5Cardputer.Keyboard.isKeyPressed(KEY_TAB)) {
     // Switch between name and description fields
     editingName = !editingName;
-  } else if (keyState.esc) {
+  } else if (M5Cardputer.Keyboard.isKeyPressed(KEY_ESC)) {
     // Cancel
     nameBuffer = "";
     descBuffer = "";
     navigation.popState();
-  } else if (keyState.del) {
+  } else if (M5Cardputer.Keyboard.isKeyPressed(KEY_BACKSPACE)) {
     // Delete character from current field
     if (editingName) {
       if (nameBuffer.length() > 0) {
@@ -319,15 +312,16 @@ void handleCreateCardInput() {
         descBuffer.remove(descBuffer.length() - 1);
       }
     }
-  } else if (keyState.word.length() > 0) {
-    // Add typed characters to current field
-    for (char c : keyState.word) {
-      if (c >= 32 && c <= 126) { // Printable characters
+  } else {
+    // Handle text input - check for any printable character
+    for (uint8_t i = 32; i <= 126; i++) {
+      if (M5Cardputer.Keyboard.isKeyPressed(i)) {
         if (editingName && nameBuffer.length() < MAX_TEXT_LENGTH) {
-          nameBuffer += c;
+          nameBuffer += (char)i;
         } else if (!editingName && descBuffer.length() < DESCRIPTION_CHAR_LIMIT) {
-          descBuffer += c;
+          descBuffer += (char)i;
         }
+        break; // Only handle one character per update
       }
     }
   }
@@ -430,7 +424,8 @@ void showCardDetails() {
 }
 
 void addCommentToCard() {
-  String comment = navigation.getInput().trim();
+  String comment = navigation.getInput();
+  comment.trim();
   if (comment.length() == 0) {
     ui.playErrorSound();
     showStatus("Comment cannot be empty");
@@ -464,7 +459,9 @@ void addCommentToCard() {
 }
 
 void createNewCard() {
-  if (nameBuffer.trim().length() == 0) {
+  String trimmedName = nameBuffer;
+  trimmedName.trim();
+  if (trimmedName.length() == 0) {
     ui.playErrorSound();
     showStatus("Card name cannot be empty");
     return;
@@ -472,7 +469,9 @@ void createNewCard() {
   
   showStatus("Creating card...");
   
-  ApiStatus status = trelloClient.createCard(nameBuffer.trim(), descBuffer.trim());
+  String trimmedDesc = descBuffer;
+  trimmedDesc.trim();
+  ApiStatus status = trelloClient.createCard(trimmedName, trimmedDesc);
   
   if (status == API_SUCCESS) {
     ui.playSuccessSound();
@@ -615,6 +614,5 @@ void showStatus(const String& message) {
 }
 
 bool isKeyPressed(char key) {
-  auto keyState = M5Cardputer.Keyboard.keysState();
-  return keyState.word.indexOf(key) >= 0;
+  return M5Cardputer.Keyboard.isKeyPressed(key);
 }

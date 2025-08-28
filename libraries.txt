@@ -9,7 +9,7 @@ M5GFX@^0.1.11
 M5Unified@^0.1.11
 
 # JSON Processing
-ArduinoJson@^6.21.0
+ArduinoJson@^6.21.5
 
 # Network Libraries (Built-in with ESP32 Arduino Core)
 # WiFi - Included with ESP32 core

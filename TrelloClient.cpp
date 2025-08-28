@@ -207,7 +207,8 @@ ApiStatus TrelloClient::fetchCardList(std::vector<CardSummary>& cards, bool useC
 
 ApiStatus TrelloClient::parseCardList(const JsonDocument& doc, std::vector<CardSummary>& cards) {
   if (doc.is<JsonArray>()) {
-    for (JsonObject card : doc.as<JsonArray>()) {
+    JsonArray cardsArray = doc.as<JsonArray>();
+    for (JsonObject card : cardsArray) {
       CardSummary summary;
       summary.id = card["id"].as<String>();
       summary.name = card["name"].as<String>();
