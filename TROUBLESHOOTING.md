@@ -4,11 +4,12 @@
 
 ### 1. ArduinoJson Version Issues
 
-**Error**: `invalid use of incomplete type 'class ArduinoJson::V730PB22::detail::InvalidConversion'`
+**Error**: `'ArduinoJson::V6215PB2::JsonDocument::JsonDocument()' is protected within this context` or `invalid use of incomplete type`
 
 **Solution**: 
 - Uninstall ArduinoJson v7.x.x from Library Manager
 - Install ArduinoJson v6.21.5 instead
+- The code now uses `DynamicJsonDocument` instead of `JsonDocument` for v6 compatibility
 - ArduinoJson v7 has breaking API changes that are incompatible with this code
 
 **Steps**:
@@ -17,17 +18,24 @@
 3. If version 7.x.x is installed, click "Remove"
 4. Install version 6.21.5 specifically
 
-### 2. M5Cardputer Keyboard API Issues
+### 2. M5Cardputer API Issues
 
-**Error**: `'struct Keyboard_Class::KeysState' has no member named 'down'`
+**Errors**: 
+- `'struct Keyboard_Class::KeysState' has no member named 'down'`
+- `'class m5::M5_CARDPUTER' has no member named 'BtnB'`
+- `'KEY_ESC' was not declared in this scope`
 
-**Solution**: 
-- The code has been updated to use `M5Cardputer.Keyboard.isKeyPressed()` instead
+**Solutions**: 
+- The code has been updated to use `M5Cardputer.Keyboard.isKeyPressed()` instead of KeysState
+- BtnB doesn't exist - using double-press BtnA for back navigation
+- KEY_ESC is replaced with backtick (`` ` ``) key
 - Arrow key equivalents are mapped to specific keys:
   - Down: `;` (semicolon)
   - Up: `/` (forward slash)  
   - Left: `,` (comma)
   - Right: `.` (period)
+  - Cancel: `` ` `` (backtick)
+  - Back: Double-press BtnA
 
 ### 3. Library Dependencies
 

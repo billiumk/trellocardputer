@@ -106,6 +106,18 @@ const char* WIFI_PASSWORD = "your_wifi_password";
 └─────────────────────────────────────┘
 ```
 
+### Control Scheme
+The updated control scheme uses these keys for navigation:
+- **`;`** - Down/Next item
+- **`/`** - Up/Previous item  
+- **`.`** - Right/Next page
+- **`,`** - Left/Previous page
+- **Enter** - Select/Confirm
+- **Letters** - Shortcuts (C=comment, N=new, D=done, R=refresh)
+- **Backspace** - Delete character
+- **`` ` ``** (backtick) - Cancel/Back
+- **Double-press BtnA** - Go back (alternative to backtick)
+
 ### Status Indicators
 - **Colored Dots**: Represent Trello label colors
 - **Green Circle**: Task is complete (all checklist items done)

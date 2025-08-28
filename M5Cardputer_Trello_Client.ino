@@ -161,13 +161,20 @@ void handleKeyboard() {
       return;
     }
     
-    // Handle back button (BtnB)
-    if (M5Cardputer.BtnB.wasPressed()) {
-      if (navigation.canGoBack()) {
-        navigation.popState();
-        ui.playTone(800, 100);
+    // Handle back button (BtnA acts as back when held or double-pressed)
+    static unsigned long lastBtnAPress = 0;
+    if (M5Cardputer.BtnA.wasPressed()) {
+      unsigned long now = millis();
+      if (now - lastBtnAPress < 500) { // Double press within 500ms = back
+        if (navigation.canGoBack()) {
+          navigation.popState();
+          ui.playTone(800, 100);
+        }
+        lastBtnAPress = 0; // Reset to prevent triple press
+        return;
+      } else {
+        lastBtnAPress = now;
       }
-      return;
     }
     
     // Handle state-specific input
@@ -274,7 +281,7 @@ void handleAddCommentInput() {
   } else if (M5Cardputer.Keyboard.isKeyPressed(KEY_BACKSPACE)) {
     // Delete character
     navigation.deleteFromInput();
-  } else if (M5Cardputer.Keyboard.isKeyPressed(KEY_ESC)) {
+  } else if (M5Cardputer.Keyboard.isKeyPressed('`')) { // Use backtick as escape
     // Cancel
     navigation.clearInput();
     navigation.popState();
@@ -296,7 +303,7 @@ void handleCreateCardInput() {
   } else if (M5Cardputer.Keyboard.isKeyPressed(KEY_TAB)) {
     // Switch between name and description fields
     editingName = !editingName;
-  } else if (M5Cardputer.Keyboard.isKeyPressed(KEY_ESC)) {
+  } else if (M5Cardputer.Keyboard.isKeyPressed('`')) { // Use backtick as escape
     // Cancel
     nameBuffer = "";
     descBuffer = "";

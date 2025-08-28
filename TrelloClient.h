@@ -19,13 +19,13 @@ private:
   
   // Helper methods
   String buildUrl(const String& endpoint, const String& params = "");
-  ApiStatus makeRequest(const String& url, const String& method, const String& payload = "", JsonDocument& response = *(new JsonDocument));
-  ApiStatus parseCardList(const JsonDocument& doc, std::vector<CardSummary>& cards);
-  ApiStatus parseCardDetails(const JsonDocument& doc, FullCard& card);
+  ApiStatus makeRequest(const String& url, const String& method, const String& payload = "");
+  ApiStatus parseCardList(const DynamicJsonDocument& doc, std::vector<CardSummary>& cards);
+  ApiStatus parseCardDetails(const DynamicJsonDocument& doc, FullCard& card);
   String getColorFromLabel(const String& color);
   void enforceRateLimit();
-  bool saveToCache(const String& filename, const JsonDocument& doc);
-  bool loadFromCache(const String& filename, JsonDocument& doc);
+  bool saveToCache(const String& filename, const DynamicJsonDocument& doc);
+  bool loadFromCache(const String& filename, DynamicJsonDocument& doc);
   
 public:
   TrelloClient();

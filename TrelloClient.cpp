@@ -114,7 +114,7 @@ String TrelloClient::buildUrl(const String& endpoint, const String& params) {
 }
 
 ApiStatus TrelloClient::makeRequest(const String& url, const String& method, 
-                                   const String& payload, JsonDocument& response) {
+                                   const String& payload) {
   if (!isConnected()) {
     if (!connectWiFi()) {
       return API_ERROR_NETWORK;
@@ -141,15 +141,7 @@ ApiStatus TrelloClient::makeRequest(const String& url, const String& method,
   lastApiCall = millis();
   
   if (httpCode > 0) {
-    String responseStr = httpClient->getString();
-    
     if (httpCode == 200 || httpCode == 201) {
-      DeserializationError error = deserializeJson(response, responseStr);
-      if (error) {
-        Serial.println("JSON parse error: " + String(error.c_str()));
-        httpClient->end();
-        return API_ERROR_PARSE;
-      }
       httpClient->end();
       return API_SUCCESS;
     } else if (httpCode == 401) {
@@ -184,7 +176,7 @@ ApiStatus TrelloClient::fetchCardList(std::vector<CardSummary>& cards, bool useC
   
   // Try cache first if requested or if offline
   if (useCache || !isConnected()) {
-    JsonDocument doc;
+    DynamicJsonDocument doc(4096);
     if (loadFromCache(CACHE_LIST_FILE, doc)) {
       return parseCardList(doc, cards);
     }
@@ -194,18 +186,34 @@ ApiStatus TrelloClient::fetchCardList(std::vector<CardSummary>& cards, bool useC
   String url = buildUrl("/lists/" + String(TRELLO_LIST_ID) + "/cards", 
                        "fields=name,id,labels,due,badges");
   
-  JsonDocument doc;
-  ApiStatus status = makeRequest(url, "GET", "", doc);
+  // Make request and get response
+  httpClient->begin(*secureClient, url);
+  httpClient->addHeader("Content-Type", "application/json");
+  httpClient->setConnectTimeout(10000);
+  httpClient->setTimeout(10000);
   
-  if (status == API_SUCCESS) {
+  int httpCode = httpClient->GET();
+  
+  if (httpCode == 200) {
+    String responseStr = httpClient->getString();
+    DynamicJsonDocument doc(4096);
+    DeserializationError error = deserializeJson(doc, responseStr);
+    httpClient->end();
+    
+    if (error) {
+      Serial.println("JSON parse error: " + String(error.c_str()));
+      return API_ERROR_PARSE;
+    }
+    
     saveToCache(CACHE_LIST_FILE, doc);
     return parseCardList(doc, cards);
+  } else {
+    httpClient->end();
+    return API_ERROR_NETWORK;
   }
-  
-  return status;
 }
 
-ApiStatus TrelloClient::parseCardList(const JsonDocument& doc, std::vector<CardSummary>& cards) {
+ApiStatus TrelloClient::parseCardList(const DynamicJsonDocument& doc, std::vector<CardSummary>& cards) {
   if (doc.is<JsonArray>()) {
     JsonArray cardsArray = doc.as<JsonArray>();
     for (JsonObject card : cardsArray) {
@@ -248,7 +256,7 @@ ApiStatus TrelloClient::fetchCardDetails(const String& cardId, FullCard& card, b
   // Try cache first if requested or if offline
   String cacheFile = CACHE_DETAILS_PREFIX + cardId + ".json";
   if (useCache || !isConnected()) {
-    JsonDocument doc;
+    DynamicJsonDocument doc(4096);
     if (loadFromCache(cacheFile, doc)) {
       return parseCardDetails(doc, card);
     }
@@ -258,18 +266,34 @@ ApiStatus TrelloClient::fetchCardDetails(const String& cardId, FullCard& card, b
   String url = buildUrl("/cards/" + cardId, 
                        "fields=name,desc,due,labels,badges&actions=commentCard&actions_limit=50&checklists=all");
   
-  JsonDocument doc;
-  ApiStatus status = makeRequest(url, "GET", "", doc);
+  // Make request and get response
+  httpClient->begin(*secureClient, url);
+  httpClient->addHeader("Content-Type", "application/json");
+  httpClient->setConnectTimeout(10000);
+  httpClient->setTimeout(10000);
   
-  if (status == API_SUCCESS) {
+  int httpCode = httpClient->GET();
+  
+  if (httpCode == 200) {
+    String responseStr = httpClient->getString();
+    DynamicJsonDocument doc(4096);
+    DeserializationError error = deserializeJson(doc, responseStr);
+    httpClient->end();
+    
+    if (error) {
+      Serial.println("JSON parse error: " + String(error.c_str()));
+      return API_ERROR_PARSE;
+    }
+    
     saveToCache(cacheFile, doc);
     return parseCardDetails(doc, card);
+  } else {
+    httpClient->end();
+    return API_ERROR_NETWORK;
   }
-  
-  return status;
 }
 
-ApiStatus TrelloClient::parseCardDetails(const JsonDocument& doc, FullCard& card) {
+ApiStatus TrelloClient::parseCardDetails(const DynamicJsonDocument& doc, FullCard& card) {
   if (!doc.is<JsonObject>()) {
     return API_ERROR_PARSE;
   }
@@ -328,33 +352,43 @@ ApiStatus TrelloClient::parseCardDetails(const JsonDocument& doc, FullCard& card
 ApiStatus TrelloClient::addComment(const String& cardId, const String& comment) {
   String url = buildUrl("/cards/" + cardId + "/actions/comments");
   
-  JsonDocument payload;
+  DynamicJsonDocument payload(1024);
   payload["text"] = comment;
   
   String payloadStr;
   serializeJson(payload, payloadStr);
   
-  JsonDocument response;
-  return makeRequest(url, "POST", payloadStr, response);
+  // Make POST request
+  httpClient->begin(*secureClient, url);
+  httpClient->addHeader("Content-Type", "application/json");
+  int httpCode = httpClient->POST(payloadStr);
+  httpClient->end();
+  
+  return (httpCode == 200 || httpCode == 201) ? API_SUCCESS : API_ERROR_NETWORK;
 }
 
 ApiStatus TrelloClient::markChecklistItemDone(const String& cardId, const String& checklistId, const String& itemId) {
   String url = buildUrl("/cards/" + cardId + "/checklist/" + checklistId + "/idChecklist/" + itemId);
   
-  JsonDocument payload;
+  DynamicJsonDocument payload(1024);
   payload["value"]["state"] = "complete";
   
   String payloadStr;
   serializeJson(payload, payloadStr);
   
-  JsonDocument response;
-  return makeRequest(url, "PUT", payloadStr, response);
+  // Make PUT request
+  httpClient->begin(*secureClient, url);
+  httpClient->addHeader("Content-Type", "application/json");
+  int httpCode = httpClient->PUT(payloadStr);
+  httpClient->end();
+  
+  return (httpCode == 200 || httpCode == 201) ? API_SUCCESS : API_ERROR_NETWORK;
 }
 
 ApiStatus TrelloClient::createCard(const String& name, const String& description) {
   String url = buildUrl("/cards");
   
-  JsonDocument payload;
+  DynamicJsonDocument payload(1024);
   payload["name"] = name;
   payload["desc"] = description;
   payload["idList"] = TRELLO_LIST_ID;
@@ -362,11 +396,16 @@ ApiStatus TrelloClient::createCard(const String& name, const String& description
   String payloadStr;
   serializeJson(payload, payloadStr);
   
-  JsonDocument response;
-  return makeRequest(url, "POST", payloadStr, response);
+  // Make POST request
+  httpClient->begin(*secureClient, url);
+  httpClient->addHeader("Content-Type", "application/json");
+  int httpCode = httpClient->POST(payloadStr);
+  httpClient->end();
+  
+  return (httpCode == 200 || httpCode == 201) ? API_SUCCESS : API_ERROR_NETWORK;
 }
 
-bool TrelloClient::saveToCache(const String& filename, const JsonDocument& doc) {
+bool TrelloClient::saveToCache(const String& filename, const DynamicJsonDocument& doc) {
   if (!SD.begin()) {
     return false;
   }
@@ -382,7 +421,7 @@ bool TrelloClient::saveToCache(const String& filename, const JsonDocument& doc) 
   return bytesWritten > 0;
 }
 
-bool TrelloClient::loadFromCache(const String& filename, JsonDocument& doc) {
+bool TrelloClient::loadFromCache(const String& filename, DynamicJsonDocument& doc) {
   if (!SD.begin()) {
     return false;
   }
@@ -400,8 +439,13 @@ bool TrelloClient::loadFromCache(const String& filename, JsonDocument& doc) {
 
 bool TrelloClient::testConnection() {
   String url = buildUrl("/members/me", "fields=username");
-  JsonDocument response;
-  return makeRequest(url, "GET", "", response) == API_SUCCESS;
+  
+  httpClient->begin(*secureClient, url);
+  httpClient->addHeader("Content-Type", "application/json");
+  int httpCode = httpClient->GET();
+  httpClient->end();
+  
+  return (httpCode == 200);
 }
 
 String TrelloClient::getLastError() {
